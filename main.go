@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 
@@ -16,6 +17,9 @@ type Todo struct {
 }
 
 func main() {
+	tasks := flag.Bool("tasks", false, "all tasks")
+	flag.Parse()
+
 	// Открываем или создаем базу данных (файл todo.db)
 	db, err := sql.Open("sqlite3", "./todo.db")
 	if err != nil {
@@ -35,16 +39,34 @@ func main() {
 	}
 	fmt.Println("Таблица todos готова к работе!")
 
+	if *tasks {
+		AllTasks(db)
+		return
+	}
+
 	fmt.Print("Введите задачу: ")
 	var task string
-	_, err = fmt.Scanln(&task) // Считываем одну строку
+	_, err = fmt.Scanln(&task)
 	if err != nil {
 		log.Fatal("Ошибка чтения ввода:", err)
 	}
-
 	AddTask(db, task, false)
+}
 
-	// Выбираем и выводим все задачи
+func AddTask(db *sql.DB, task string, completed bool) {
+	insertSQL := `INSERT INTO todos (task, completed) VALUES (?, ?)`
+	result, err := db.Exec(insertSQL, task, completed)
+	if err != nil {
+		log.Fatal("Error inserting task")
+	}
+	newID, err := result.LastInsertId()
+	if err != nil {
+		log.Fatal("Error get ID new task", err)
+	}
+	fmt.Printf("Adding new task ID: %d\n", newID)
+}
+
+func AllTasks(db *sql.DB) {
 	rows, err := db.Query("SELECT id, task, completed FROM todos")
 	if err != nil {
 		log.Fatal("Ошибка выборки задач:", err)
@@ -65,17 +87,4 @@ func main() {
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
 	}
-}
-
-func AddTask(db *sql.DB, task string, completed bool) {
-	insertSQL := `INSERT INTO todos (task, completed) VALUES (?, ?)`
-	result, err := db.Exec(insertSQL, task, completed)
-	if err != nil {
-		log.Fatal("Error inserting task")
-	}
-	newID, err := result.LastInsertId()
-	if err != nil {
-		log.Fatal("Error get ID new task", err)
-	}
-	fmt.Printf("Adding new task ID: %d\n", newID)
 }
