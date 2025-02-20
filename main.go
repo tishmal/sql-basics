@@ -18,6 +18,7 @@ type Todo struct {
 
 func main() {
 	tasks := flag.Bool("tasks", false, "all tasks")
+	completedID := flag.Int("complete", 0, "complete task by ID")
 	flag.Parse()
 
 	// Открываем или создаем базу данных (файл todo.db)
@@ -41,6 +42,10 @@ func main() {
 
 	if *tasks {
 		AllTasks(db)
+		return
+	}
+	if *completedID > 0 {
+		CompleteTask(db, *completedID) // Завершаем задачу по ID
 		return
 	}
 
@@ -87,4 +92,13 @@ func AllTasks(db *sql.DB) {
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func CompleteTask(db *sql.DB, taskID int) {
+	updateSQL := `UPDATE todos SET completed = 1 WHERE id = ?`
+	_, err := db.Exec(updateSQL, taskID)
+	if err != nil {
+		log.Fatal("Error update status task", err)
+	}
+	log.Printf("Task with ID: %d была выполнена!\n", taskID)
 }
