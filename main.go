@@ -35,17 +35,14 @@ func main() {
 	}
 	fmt.Println("Таблица todos готова к работе!")
 
-	// Вставляем новую задачу
-	insertSQL := `INSERT INTO todos (task, completed) VALUES (?, ?)`
-	result, err := db.Exec(insertSQL, "Купить молоко", false)
+	fmt.Print("Введите задачу: ")
+	var task string
+	_, err = fmt.Scanln(&task) // Считываем одну строку
 	if err != nil {
-		log.Fatal("Ошибка вставки задачи:", err)
+		log.Fatal("Ошибка чтения ввода:", err)
 	}
-	newID, err := result.LastInsertId()
-	if err != nil {
-		log.Fatal("Ошибка получения ID новой задачи:", err)
-	}
-	fmt.Printf("Добавлена новая задача с ID: %d\n", newID)
+
+	AddTask(db, task, false)
 
 	// Выбираем и выводим все задачи
 	rows, err := db.Query("SELECT id, task, completed FROM todos")
@@ -68,4 +65,17 @@ func main() {
 	if err = rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+}
+
+func AddTask(db *sql.DB, task string, completed bool) {
+	insertSQL := `INSERT INTO todos (task, completed) VALUES (?, ?)`
+	result, err := db.Exec(insertSQL, task, completed)
+	if err != nil {
+		log.Fatal("Error inserting task")
+	}
+	newID, err := result.LastInsertId()
+	if err != nil {
+		log.Fatal("Error get ID new task", err)
+	}
+	fmt.Printf("Adding new task ID: %d\n", newID)
 }
